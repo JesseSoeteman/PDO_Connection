@@ -7,10 +7,10 @@ class DatabaseDetails {
     public string $username;
     public string $password;
 
-    public function __construct(string $host, string $database, string $username, string $password) {
+    public function __construct(string $unix_socket, string $database, string $username, string $password) {
         $this->username = $username;
         $this->password = $password;
 
-        $this->dsn = sprintf("mysql:dbname=%s;host=%s", $database, $host);
+        $this->dsn = sprintf("mysql:dbname=%s;unix_socket=%s", $database, $unix_socket);
     }
 }
