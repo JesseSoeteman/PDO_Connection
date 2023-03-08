@@ -46,11 +46,15 @@ class ParamBindObject
      * @param string $value The value to bind to the parameter.
      * @param int $idCount A counter to keep track of how many characters are used to bind the parameter.
      */
-    public function __construct($pdo, $param, $value, $idCount = 1)
+    public function __construct($param, $value, $idCount = 1)
     {
+        if (!isset($GLOBALS["PDO_Connection_PDO"])) {
+            throw new \Exception("The PDO object is not set.");
+        }
+        $this->pdo = &$GLOBALS["PDO_Connection_PDO"];
+
         $this->param = $param;
         $this->idCount = $idCount;
-        $this->pdo = $pdo;
 
         $escapedValue = $this->pdo->quote($value);
 

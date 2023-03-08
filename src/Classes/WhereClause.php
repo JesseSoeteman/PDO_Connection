@@ -5,6 +5,8 @@ namespace PDO_Connection\Classes;
 use PDO_Connection\Classes\ParamBindObject;
 use PDO_Connection\Statics\OPERATOR;
 
+use PDO;
+
 class WhereClause
 {
     public string $column;
