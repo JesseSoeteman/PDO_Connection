@@ -33,6 +33,7 @@ class PDO_Connection
         try {
             $this->db = new PDO($details->dsn, $details->username, $details->password);
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $GLOBALS["PDO_Connection_PDO"] = &$this->db;
         } catch (Exception $e) {
             $this->checkError([false, "Data base connection failed: " . $e->getMessage()]);
         }
@@ -264,7 +265,7 @@ class PDO_Connection
      */
     public function checkTableAndColumns(string $table, array $columns = ["*"]): void
     {
-        $tableExists = $this->executeStatement("SELECT name FROM sqlite_master WHERE type='table' AND name=:table_name;", [new ParamBindObject($this->db, "table_name", $table)]);
+        $tableExists = $this->executeStatement("SELECT name FROM sqlite_master WHERE type='table' AND name=:table_name;", [new ParamBindObject("table_name", $table)]);
 
         if ($tableExists == false || count($tableExists) == 0) {
             $this->checkError([false, "Table does not exist. Table: {$table}"]);
