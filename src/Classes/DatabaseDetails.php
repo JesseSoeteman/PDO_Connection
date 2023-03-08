@@ -11,6 +11,6 @@ class DatabaseDetails {
         $this->username = $username;
         $this->password = $password;
 
-        $this->dsn = "mysql:host=" . $host . ";dbname=" . $database;
+        $this->dsn = sprintf("mysql:dbname=%s;host=%s", $database, $host);
     }
 }
