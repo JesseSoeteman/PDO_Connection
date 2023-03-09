@@ -268,10 +268,10 @@ class PDO_Connection
      */
     public function checkTableAndColumns(string $table, array $columns = ["*"]): void
     {
-        $tableExists = $this->executeStatement("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = :table_name;", [new ParamBindObject("table_name", $table)]);
+        $tableExists = $this->executeStatement("SELECT table_name FROM information_schema.tables WHERE table_schema = :table_name", [new ParamBindObject("table_name", $table)]);
 
-        if ($tableExists == false || count($tableExists) == 0) {
-            $this->checkError([false, "Table does not exist. Table: {$table}"]);
+        if (!$tableExists) {
+            $this->checkError([false, "Table does not exist. Table: `{$table}`"]);
         }
 
         if (count($columns) == 0 || $columns[0] == "*") {
@@ -288,7 +288,7 @@ class PDO_Connection
 
         foreach ($columns as $column) {
             if (!in_array($column, $tableColumnsArray)) {
-                $this->checkError([false, "Column does not exist. Column: {$column}"]);
+                $this->checkError([false, "Column does not exist. Column: `{$column}`"]);
             }
         }
     }
