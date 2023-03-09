@@ -54,6 +54,8 @@ class PDO_Connection
      */
     public function select(string $table, array $columns, array $wheres = []): array
     {
+        var_dump($table, $columns, $wheres);
+
         $sql = "SELECT " . implode(" ,", $columns) . " FROM {$table}";
 
         $params = [];
@@ -106,13 +108,7 @@ class PDO_Connection
      */
     public function update(string $table, array $params, array $wheres = [])
     {
-        var_dump($table);
-        var_dump($params);
-        var_dump($wheres);
-        
         $select = $this->select($table, ["*"], $wheres);
-
-        var_dump($select);
 
         if (count($select) === 0) {
             $this->checkError([false, "No rows found."]);
