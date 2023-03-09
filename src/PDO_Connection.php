@@ -188,13 +188,10 @@ class PDO_Connection
             $params = array_merge($params, $getWhere[1]);
         }
 
-        $result = $this->executeStatement($sql, $params);
+        // If this fails, it will throw an exception.
+        $this->executeStatement($sql, $params, false);
 
-        if ($result === false) {
-            $this->checkError([false, "Error while executing statement."]);
-        }
-
-        return $this->checkError([true, $result]);
+        return $this->checkError([true, true]);
     }
 
     /**
@@ -216,8 +213,9 @@ class PDO_Connection
      * 
      * @param string $query The query to execute.
      * @param array $params The parameters to bind to the query. (ParamBindObject)
+     * @param bool $needsFetch If the query needs to be fetched.
      */
-    public function executeStatement($query = "", $params = [])
+    public function executeStatement($query = "", $params = [], $needsFetch = true)
     {
         $stmt = null;
 
@@ -238,12 +236,17 @@ class PDO_Connection
             }
         }
 
+        
         $result = $stmt->execute();
-
+        
         if (!$result) {
             $this->checkError([false, "Failed to execute statement."]);
         }
 
+        if (!$needsFetch) {
+            return true;
+        }
+        
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (!$result) {
