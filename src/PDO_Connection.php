@@ -70,13 +70,7 @@ class PDO_Connection
             $this->checkError([false, "Error while executing statement."]);
         }
 
-        $returnArray = [];
-
-        while ($row = $result) {
-            $returnArray[] = $row;
-        }
-
-        return $this->checkError([true, $returnArray]);
+        return $this->checkError([true, $result]);
     }
 
     /**
