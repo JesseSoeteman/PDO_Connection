@@ -112,6 +112,8 @@ class PDO_Connection
         
         $select = $this->select($table, ["*"], $wheres);
 
+        var_dump($select);
+
         if (count($select) === 0) {
             $this->checkError([false, "No rows found."]);
         }
