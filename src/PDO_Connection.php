@@ -128,6 +128,9 @@ class PDO_Connection
             $params = array_merge($params, $getWhere[1]);
         }
 
+        var_dump($sql);
+        var_dump($params);
+
         $result = $this->executeStatement($sql, $params);
 
         if ($result === false) {
