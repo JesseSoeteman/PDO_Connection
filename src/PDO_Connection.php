@@ -106,6 +106,10 @@ class PDO_Connection
      */
     public function update(string $table, array $params, array $wheres = [])
     {
+        var_dump($table);
+        var_dump($params);
+        var_dump($wheres);
+        
         $select = $this->select($table, ["*"], $wheres);
 
         if (count($select) === 0) {
