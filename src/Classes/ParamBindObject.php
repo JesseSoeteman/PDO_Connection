@@ -21,9 +21,9 @@ class ParamBindObject
      */
     public string $param;
     /**
-     * @var string $value The value to bind to the parameter.
+     * @var $value The value to bind to the parameter.
      */
-    public string $value;
+    public $value;
     /**
      * @var int $type The type of the value.
      */
