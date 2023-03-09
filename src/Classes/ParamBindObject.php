@@ -43,7 +43,7 @@ class ParamBindObject
      * 
      * @param PDO $pdo The PDO object.
      * @param string $param The parameter to bind.
-     * @param string $value The value to bind to the parameter.
+     * @param $value The value to bind to the parameter.
      * @param int $idCount A counter to keep track of how many characters are used to bind the parameter.
      */
     public function __construct($param, $value, $idCount = 1)
@@ -56,11 +56,9 @@ class ParamBindObject
         $this->param = $param;
         $this->idCount = $idCount;
 
-        $escapedValue = $this->pdo->quote($value);
+        $this->value = $value;
 
-        $this->value = $escapedValue;
-
-        $type = gettype($escapedValue);
+        $type = gettype($value);
 
         switch ($type) {
             case "boolean":
@@ -70,10 +68,13 @@ class ParamBindObject
                 $this->type = PDO::PARAM_INT;
                 break;
             case "string":
+                $this->type = $this->pdo->quote($value);
+                break;
+            case "float":
                 $this->type = PDO::PARAM_STR;
                 break;
             default:
-                $this->type = PDO::PARAM_STR;
+                $this->type = $this->pdo->quote($value);
                 break;
         }
     }
