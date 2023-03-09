@@ -54,8 +54,6 @@ class PDO_Connection
      */
     public function select(string $table, array $columns, array $wheres = []): array
     {
-        $this->checkTableAndColumns($table, $columns);
-
         $sql = "SELECT " . implode(" ,", $columns) . " FROM {$table}";
 
         $params = [];
@@ -90,13 +88,6 @@ class PDO_Connection
      */
     public function insert(string $table, array $params)
     {
-        $this->checkTableAndColumns($table, array_map(function ($param) {
-            if (!$param instanceof ParamBindObject) {
-                $this->checkError([false, "ParamBindObject expected."]);
-            }
-            return $param->param;
-        }, $params));
-
         $sql = "INSERT INTO {$table} (" . implode(" ,", array_map(function ($param) {
             return $param->param;
         }, $params)) . ") VALUES (" . implode(" ,", array_map(function ($param) {
@@ -121,18 +112,6 @@ class PDO_Connection
      */
     public function update(string $table, array $params, array $wheres = [])
     {
-        $this->checkTableAndColumns($table, array_merge(array_map(function ($param) {
-            if (!$param instanceof ParamBindObject) {
-                $this->checkError([false, "ParamBindObject expected."]);
-            }
-            return $param->param;
-        }, $params), array_map(function ($where) {
-            if (!$where instanceof WhereClause) {
-                $this->checkError([false, "WhereClause expected."]);
-            }
-            return $where->column;
-        }, $wheres)));
-
         $select = $this->select($table, ["*"], $wheres);
 
         if (count($select) === 0) {
@@ -168,13 +147,6 @@ class PDO_Connection
      */
     public function delete(string $table, array $wheres = [])
     {
-        $this->checkTableAndColumns($table, array_map(function ($where) {
-            if (!$where instanceof WhereClause) {
-                $this->checkError([false, "WhereClause expected."]);
-            }
-            return $where->column;
-        }, $wheres));
-
         $select = $this->select($table, ["*"], $wheres);
 
         if (count($select) === 0) {
@@ -256,43 +228,6 @@ class PDO_Connection
         }
 
         return $result;
-    }
-
-    /**
-     * Check Table And Columns
-     * 
-     * Checks if a table and columns exist. Throws an exception if the table or columns do not exist.
-     * 
-     * @param string $table The table to check.
-     * @param array $columns The columns to check.
-     * 
-     * @return void
-     */
-    public function checkTableAndColumns(string $table, array $columns = ["*"]): void
-    {
-        $tableExists = $this->executeStatement("SHOW TABLES LIKE :table_name;", [new ParamBindObject("table_name", $table)]);
-
-        if (!$tableExists) {
-            $this->checkError([false, "Table does not exist. Table: `{$table}`"]);
-        }
-
-        if (count($columns) == 0 || $columns[0] == "*") {
-            return;
-        }
-
-        $tableColumns = $this->executeStatement("SELECT column_name FROM information_schema.columns WHERE table_name = :table_name;", [new ParamBindObject("table_name", $table)]);
-
-        $tableColumnsArray = [];
-
-        foreach ($tableColumns as $row) {
-            $tableColumnsArray[] = $row["column_name"];
-        }
-
-        foreach ($columns as $column) {
-            if (!in_array($column, $tableColumnsArray)) {
-                $this->checkError([false, "Column does not exist. Column: `{$column}`"]);
-            }
-        }
     }
 
     /**
