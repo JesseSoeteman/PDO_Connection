@@ -34,7 +34,6 @@ class WhereClause
             case OPERATOR::LIKE:
             case OPERATOR::NOT_LIKE:
                 $this->boundParams = [new ParamBindObject("::" . $this->column, $this->value, 2)];
-                $this->value = " ::" . $this->column;
                 break;
             case OPERATOR::IN:
             case OPERATOR::NOT_IN:
