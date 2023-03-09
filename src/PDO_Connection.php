@@ -278,12 +278,12 @@ class PDO_Connection
             return;
         }
 
-        $tableColumns = $this->executeStatement("PRAGMA table_info({$table});");
+        $tableColumns = $this->executeStatement("SELECT column_name FROM information_schema.columns WHERE table_name = :table_name;", [new ParamBindObject("table_name", $table)]);
 
         $tableColumnsArray = [];
 
         foreach ($tableColumns as $row) {
-            $tableColumnsArray[] = $row["name"];
+            $tableColumnsArray[] = $row["column_name"];
         }
 
         foreach ($columns as $column) {
