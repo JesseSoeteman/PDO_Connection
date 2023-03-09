@@ -68,13 +68,15 @@ class ParamBindObject
                 $this->type = PDO::PARAM_INT;
                 break;
             case "string":
-                $this->type = $this->pdo->quote($value);
+                $this->value = $this->pdo->quote($value);
+                $this->type = PDO::PARAM_STR;
                 break;
             case "float":
                 $this->type = PDO::PARAM_STR;
                 break;
             default:
-                $this->type = $this->pdo->quote($value);
+                $this->value = $this->pdo->quote($value);
+                $this->type = PDO::PARAM_STR;
                 break;
         }
     }
