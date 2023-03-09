@@ -270,7 +270,7 @@ class PDO_Connection
      */
     public function checkTableAndColumns(string $table, array $columns = ["*"]): void
     {
-        $tableExists = $this->executeStatement("SELECT table_name FROM information_schema.tables WHERE table_schema = :table_schema AND table_name = :table_name;", [new ParamBindObject("table_name", $table), new ParamBindObject("table_schema", $this->details->database)]);
+        $tableExists = $this->executeStatement("SHOW TABLES LIKE `:table_name;`", [new ParamBindObject("table_name", $table)]);
 
         if (!$tableExists) {
             $this->checkError([false, "Table does not exist. Table: `{$table}`"]);
