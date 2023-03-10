@@ -43,9 +43,6 @@ class ParamBindObject
      */
     public function __construct($param, $value, $idCount = 0)
     {
-        if (!isset($GLOBALS["PDO_Connection_PDO"])) {
-            throw new \Exception("The PDO object is not set.");
-        }
 
         $this->param = $param;
         $this->idCount = $idCount;
