@@ -200,9 +200,7 @@ class PDO_Connection
                 $this->checkError([false, "ParamBindObject expected."]);
             }
 
-            $idCountString = ":" . str_repeat("x", $param->idCount);
-            $binding = $stmt->bindValue($idCountString . $param->param, $param->value, $param->type);
-            var_dump($idCountString . $param->param, $param->value, $param->type, $binding);
+            $binding = $stmt->bindValue($param->param, $param->value, $param->type);
             if (!$binding) {
                 $this->checkError([false, "Failed to bind value."]);
             }
