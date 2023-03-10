@@ -54,8 +54,6 @@ class PDO_Connection
      */
     public function select(string $table, array $columns, array $wheres = []): array
     {
-        var_dump($table, $columns, $wheres);
-
         $sql = "SELECT " . implode(" ,", $columns) . " FROM {$table}";
 
         $params = [];
@@ -187,8 +185,6 @@ class PDO_Connection
      */
     public function executeStatement($query = "", $params = [], $needsFetch = true)
     {
-        var_dump($query, $params, $needsFetch); // TODO: Remove
-
         $stmt = null;
 
         if (!$stmt = $this->db->prepare($query)) {
