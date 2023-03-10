@@ -35,7 +35,6 @@ class PDO_Connection
             $this->db = new PDO($details->dsn, $details->username, $details->password);
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->details = $details;
-            $GLOBALS["PDO_Connection_PDO"] = &$this->db;
         } catch (Exception $e) {
             $this->checkError([false, "Data base connection failed: " . $e->getMessage()]);
         }

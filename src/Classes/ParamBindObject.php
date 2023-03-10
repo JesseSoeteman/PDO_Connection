@@ -32,16 +32,11 @@ class ParamBindObject
      * @var int $idCount A counter to keep track of how many characters are used to bind the parameter.
      */
     public int $idCount;
-    /**
-     * @var PDO $pdo The PDO object.
-     */
-    public PDO $pdo;
 
 
     /**
      * Constructor
      * 
-     * @param PDO $pdo The PDO object.
      * @param string $param The parameter to bind.
      * @param $value The value to bind to the parameter.
      * @param int $idCount A counter to keep track of how many characters are used to bind the parameter.
@@ -51,7 +46,6 @@ class ParamBindObject
         if (!isset($GLOBALS["PDO_Connection_PDO"])) {
             throw new \Exception("The PDO object is not set.");
         }
-        $this->pdo = &$GLOBALS["PDO_Connection_PDO"];
 
         $this->param = $param;
         $this->idCount = $idCount;
@@ -68,14 +62,12 @@ class ParamBindObject
                 $this->type = PDO::PARAM_INT;
                 break;
             case "string":
-                $this->value = $this->pdo->quote($value);
                 $this->type = PDO::PARAM_STR;
                 break;
             case "float":
                 $this->type = PDO::PARAM_STR;
                 break;
             default:
-                $this->value = $this->pdo->quote($value);
                 $this->type = PDO::PARAM_STR;
                 break;
         }
