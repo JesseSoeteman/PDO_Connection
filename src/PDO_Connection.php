@@ -87,7 +87,7 @@ class PDO_Connection
         $sql = "INSERT INTO {$table} (" . implode(" ,", array_map(function ($param) {
             return $param->param;
         }, $params)) . ") VALUES (" . implode(" ,", array_map(function ($param) {
-            return str_repeat(":", $param->idCount) . $param->param;
+            return ":" . str_repeat("x", $param->idCount) . $param->param;
         }, $params)) . ")";
 
         $result = $this->executeStatement($sql, $params);
@@ -115,7 +115,7 @@ class PDO_Connection
         }
 
         $sql = "UPDATE {$table} SET " . implode(" ,", array_map(function ($param) {
-            return $param->param . " = " . str_repeat(":", $param->idCount) . $param->param;
+            return $param->param . " = :" . str_repeat("x", $param->idCount) . $param->param;
         }, $params));
 
         if (count($wheres) > 0) {
@@ -123,9 +123,6 @@ class PDO_Connection
             $sql .= $getWhere[0];
             $params = array_merge($params, $getWhere[1]);
         }
-
-        var_dump($sql);
-        var_dump($params);
 
         $result = $this->executeStatement($sql, $params);
 
@@ -190,6 +187,8 @@ class PDO_Connection
      */
     public function executeStatement($query = "", $params = [], $needsFetch = true)
     {
+        var_dump($query, $params, $needsFetch); // TODO: Remove
+
         $stmt = null;
 
         if (!$stmt = $this->db->prepare($query)) {
@@ -197,12 +196,11 @@ class PDO_Connection
         }
 
         foreach ($params as &$param) {
-
             if (!$param instanceof ParamBindObject) {
                 $this->checkError([false, "ParamBindObject expected."]);
             }
 
-            $idCountString = str_repeat(":", $param->idCount);
+            $idCountString = ":" . str_repeat("x", $param->idCount);
             $stmt->bindValue($idCountString . $param->param, $param->value, $param->type);
             if (!$stmt) {
                 $this->checkError([false, "Failed to bind value."]);

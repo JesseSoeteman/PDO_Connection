@@ -46,7 +46,7 @@ class ParamBindObject
      * @param $value The value to bind to the parameter.
      * @param int $idCount A counter to keep track of how many characters are used to bind the parameter.
      */
-    public function __construct($param, $value, $idCount = 1)
+    public function __construct($param, $value, $idCount = 0)
     {
         if (!isset($GLOBALS["PDO_Connection_PDO"])) {
             throw new \Exception("The PDO object is not set.");
