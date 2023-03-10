@@ -34,7 +34,7 @@ class WhereClause
             case OPERATOR::LIKE:
             case OPERATOR::NOT_LIKE:
                 $this->boundParams = [new ParamBindObject(":xx" . $this->column, $this->value, 2)];
-                $this->value = " " . "`:xx" . $this->column . "`";
+                $this->value = " " . ":xx" . $this->column;
                 break;
             case OPERATOR::IN:
             case OPERATOR::NOT_IN:
@@ -43,7 +43,7 @@ class WhereClause
                 }
                 $this->value = " (" . implode(", ", array_map(function ($value, $index) {
                     $this->boundParams[] = new ParamBindObject(":" . str_repeat("x", $index) . $this->column, $value, $index);
-                    return "`" . ":" . str_repeat("x", $index) . $this->column . "`";
+                    return ":" . str_repeat("x", $index) . $this->column;
                 }, $this->value)) . ")";
                 break;
             case OPERATOR::BETWEEN:
@@ -56,7 +56,7 @@ class WhereClause
                 }
                 $this->value = " " . implode(" AND ", array_map(function ($value, $index) {
                     $this->boundParams[] = new ParamBindObject(":" . str_repeat("x", $index) . $this->column, $value, $index);
-                    return "`" . ":" . str_repeat("x", $index) . $this->column . "`";
+                    return ":" . str_repeat("x", $index) . $this->column;
                 }, $this->value));
                 break;
             default:
