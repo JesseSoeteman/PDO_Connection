@@ -200,8 +200,6 @@ class PDO_Connection
                 $this->checkError([false, "Failed to bind value."]);
             }
         }
-
-        var_dump($query, $params);
         
         $result = $stmt->execute();
         
