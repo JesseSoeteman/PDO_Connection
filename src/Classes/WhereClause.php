@@ -44,7 +44,7 @@ class WhereClause
                 $this->value = " (" . implode(", ", array_map(function ($value, $index) {
                     $this->boundParams[] = new ParamBindObject(":" . str_repeat("x", $index) . $this->column, $value, $index);
                     return ":" . str_repeat("x", $index) . $this->column;
-                }, $this->value)) . ")";
+                }, $this->value, array_keys($this->value))) . ")";
                 break;
             case OPERATOR::BETWEEN:
             case OPERATOR::NOT_BETWEEN:
@@ -57,7 +57,7 @@ class WhereClause
                 $this->value = " " . implode(" AND ", array_map(function ($value, $index) {
                     $this->boundParams[] = new ParamBindObject(":" . str_repeat("x", $index) . $this->column, $value, $index);
                     return ":" . str_repeat("x", $index) . $this->column;
-                }, $this->value));
+                }, $this->value, array_keys($this->value)));
                 break;
             default:
                 throw new \Exception("The operator '" . $this->operator . "' is not supported.");
