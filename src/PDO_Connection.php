@@ -138,11 +138,11 @@ class PDO_Connection
      * @param string $table The table to delete from.
      * @param array $wheres The where conditions. (WhereClause)
      */
-    public function delete(string $table, array $wheres = [])
+    public function delete(string $table, array $wheres = [], int $minimumRowsToDelete = 1)
     {
         $select = $this->select($table, ["*"], $wheres);
 
-        if (count($select) === 0) {
+        if (count($select) < $minimumRowsToDelete) {
             $this->checkError([false, "No rows found."]);
         }
         
