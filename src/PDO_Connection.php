@@ -21,7 +21,7 @@ use PDO_Connection\Statics\LOGIC_OP;
 class PDO_Connection
 {
 
-    private PDO $db;
+    private PDO | null $db;
     private DatabaseDetails $details;
     private bool $pause = false;
 
