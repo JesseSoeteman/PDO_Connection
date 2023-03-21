@@ -23,6 +23,7 @@ class PDO_Connection
 
     private PDO $db;
     private DatabaseDetails $details;
+    private bool $pause = false;
 
     /**
      * Constructor
@@ -31,13 +32,8 @@ class PDO_Connection
      */
     public function __construct(DatabaseDetails $details)
     {
-        try {
-            $this->db = new PDO($details->dsn, $details->username, $details->password);
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->details = $details;
-        } catch (Exception $e) {
-            $this->checkError([false, "Data base connection failed: " . $e->getMessage()]);
-        }
+        $this->details = $details;
+        $this->startConnection();
     }
 
     /**
@@ -218,6 +214,47 @@ class PDO_Connection
         }
 
         return $result;
+    }
+
+    /**
+     * pausePDO
+     * 
+     * Pauses the PDO connection.
+     */
+    public function pausePDO()
+    {
+        $this->db = null;
+        $this->pause = true;
+    }
+
+    /**
+     * Resume PDO
+     * 
+     * Resumes the PDO connection.
+     * 
+     * @throws Exception
+     */
+    public function resumePDO()
+    {
+        $this->startConnection();
+        $this->pause = false;
+    }
+
+    /**
+     * startConnection
+     * 
+     * Starts the connection to the database.
+     * 
+     * @throws Exception
+     */
+    private function startConnection()
+    {
+        try {
+            $this->db = new PDO($this->details->dsn, $this->details->username, $this->details->password);
+            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (Exception $e) {
+            $this->checkError([false, "Data base connection failed: " . $e->getMessage()]);
+        }  
     }
 
     /**
