@@ -276,7 +276,7 @@ class PDO_Connection
                 if (!$where instanceof WhereClause) {
                     $this->checkError([false, "WhereClause expected."]);
                 }
-                $params = array_merge($params, $where->getParams());
+                $params = array_merge($params, $where->getBoundParams());
                 return $where->getClause();
             } else {
                 if (!in_array($where, [LOGIC_OP::AND, LOGIC_OP::OR])) {
