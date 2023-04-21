@@ -44,13 +44,16 @@ class ParamBindObject
     public function __construct($param, $value, $idCount = 0)
     {
 
+        // set the param and idCount and value
         $this->param = $param;
         $this->idCount = $idCount;
 
         $this->value = $value;
 
+        // get the type of the value
         $type = gettype($value);
 
+        // set the type of the value
         switch ($type) {
             case "boolean":
                 $this->type = PDO::PARAM_BOOL;

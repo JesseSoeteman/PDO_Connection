@@ -2,6 +2,14 @@
 
 namespace PDO_Connection\Statics;
 
+/**
+ * OPERATOR
+ * 
+ * Static class that holds the operators.
+ * 
+ * @version 1.0.0
+ * @since   29-12-2022
+ */
 abstract class OPERATOR {
     const EQUALS = '=';
     const NOT_EQUALS = '!=';

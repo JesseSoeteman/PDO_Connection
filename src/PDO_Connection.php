@@ -28,10 +28,11 @@ class PDO_Connection
     /**
      * Constructor
      * 
-     * 
+     * @param DatabaseDetails $details The database details to use.
      */
     public function __construct(DatabaseDetails $details)
     {
+        // Set the database details
         $this->details = $details;
         $this->startConnection();
     }
@@ -49,22 +50,27 @@ class PDO_Connection
      */
     public function select(string $table, array $columns, array $wheres = []): array
     {
+        // Create the sql statement
         $sql = "SELECT " . implode(" ,", $columns) . " FROM {$table}";
 
         $params = [];
 
+        // Check if there are any where clauses to use and add them to the sql statement
         if (count($wheres) > 0) {
             $getWhere = $this->getWhereClauseString($wheres);
             $sql .= $getWhere[0];
             $params = array_merge($params, $getWhere[1]);
         }
         
+        // Execute the statement
         $result = $this->executeStatement($sql, $params);
 
+        // Check if the statement failed
         if ($result === false) {
             $this->checkError([false, "Error while executing statement."]);
         }
 
+        // Return the result
         return $this->checkError([true, $result]);
     }
 
@@ -77,18 +83,22 @@ class PDO_Connection
      */
     public function insert(string $table, array $params)
     {
+        // Create the sql statement
         $sql = "INSERT INTO {$table} (" . implode(" ,", array_map(function ($param) {
             return $param->param;
         }, $params)) . ") VALUES (" . implode(" ,", array_map(function ($param) {
             return ":" . str_repeat("x", $param->idCount) . $param->param;
         }, $params)) . ")";
 
+        // Execute the statement
         $result = $this->executeStatement($sql, $params);
 
+        // Check if the statement failed
         if ($result === false) {
             $this->checkError([false, "Error while executing statement."]);
         }
 
+        // Return the result
         return $this->checkError([true, $result]);
     }
 
@@ -101,28 +111,35 @@ class PDO_Connection
      */
     public function update(string $table, array $params, array $wheres = [])
     {
+        // Check if there are any rows to update
         $select = $this->select($table, ["*"], $wheres);
 
+        // Stop the script if there are no rows to update
         if (count($select) === 0) {
             $this->checkError([false, "No rows found."]);
         }
 
+        // Create the sql statement
         $sql = "UPDATE {$table} SET " . implode(" ,", array_map(function ($param) {
             return $param->param . " = :" . str_repeat("x", $param->idCount) . $param->param;
         }, $params));
 
+        // Check if there are any where clauses to use and add them to the sql statement
         if (count($wheres) > 0) {
             $getWhere = $this->getWhereClauseString($wheres);
             $sql .= $getWhere[0];
             $params = array_merge($params, $getWhere[1]);
         }
 
+        // Execute the statement
         $result = $this->executeStatement($sql, $params);
 
+        // Check if the statement failed
         if ($result === false) {
             $this->checkError([false, "Error while executing statement."]);
         }
 
+        // Return the result
         return $this->checkError([true, $result]);
     }
 
@@ -136,15 +153,19 @@ class PDO_Connection
      */
     public function delete(string $table, array $wheres = [], int $minimumRowsToDelete = 1)
     {
+        // Check if there are any rows to delete
         $select = $this->select($table, ["*"], $wheres);
 
+        // Stop the script if there are no rows to delete and the minimum rows to delete is not 0
         if (count($select) < $minimumRowsToDelete) {
             $this->checkError([false, "No rows found."]);
         }
         
+        // Create the sql statement
         $params = [];
         $sql = "DELETE FROM {$table}";
 
+        // Check if there are any where clauses to use and add them to the sql statement
         if (count($wheres) > 0) {
             $getWhere = $this->getWhereClauseString($wheres);
             $sql .= $getWhere[0];
@@ -154,6 +175,7 @@ class PDO_Connection
         // If this fails, it will throw an exception.
         $this->executeStatement($sql, $params, false);
 
+        // Return the result
         return $this->checkError([true, true]);
     }
 
@@ -166,6 +188,7 @@ class PDO_Connection
      */
     public function lastInsertRowID(): int
     {
+        // Return the last inserted row ID
         return $this->db->lastInsertId();
     }
     
@@ -182,10 +205,12 @@ class PDO_Connection
     {
         $stmt = null;
 
+        // Prepare the statement
         if (!$stmt = $this->db->prepare($query)) {
             $this->checkError([false, "Failed to prepare statement."]);
         }
 
+        // Bind the parameters
         foreach ($params as &$param) {
             if (!$param instanceof ParamBindObject) {
                 $this->checkError([false, "ParamBindObject expected."]);
@@ -197,22 +222,28 @@ class PDO_Connection
             }
         }
         
+        // Execute the statement
         $result = $stmt->execute();
         
+        // Check if the statement failed
         if (!$result) {
             $this->checkError([false, "Failed to execute statement."]);
         }
 
+        // Check if the statement needs to be fetched
         if (!$needsFetch) {
             return true;
         }
         
+        // Fetch the result
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Check if the statement failed
         if ($result === false) {
             $this->checkError([false, "Failed to fetch result."]);
         }
 
+        // Return the result
         return $result;
     }
 
@@ -223,7 +254,9 @@ class PDO_Connection
      */
     public function pausePDO()
     {
+        // Set de PDO to null to pause the connection
         $this->db = null;
+        // Set the pause variable to true
         $this->pause = true;
     }
 
@@ -236,7 +269,9 @@ class PDO_Connection
      */
     public function resumePDO()
     {
+        // Resume the connection with the databasedetails
         $this->startConnection();
+        // Set the pause variable to false
         $this->pause = false;
     }
 
@@ -249,6 +284,7 @@ class PDO_Connection
      */
     private function startConnection()
     {
+        // Try to start a PDO connection with the database details
         try {
             $this->db = new PDO($this->details->dsn, $this->details->username, $this->details->password);
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -262,7 +298,7 @@ class PDO_Connection
      * 
      * Gets the where clause string and parameters.
      * 
-     * @param array $wheres The where conditions. (WhereClause)
+     * @param array $wheres The where conditions. (WhereClause) [WhereClause, operator, WhereClause, operator, ...]
      * 
      * @return array The where clause string and parameters. [string, params]
      * 
@@ -271,7 +307,9 @@ class PDO_Connection
     private function getWhereClauseString(array $wheres)
     {
         $params = [];
+        // Create the where part of the sql statement
         $sql = " WHERE " . implode(" ", array_map(function ($where, $index) use (&$params) {
+            // Check if the index is even or odd (even = where clause, odd = operator)
             if ($index % 2 === 0) {
                 if (!$where instanceof WhereClause) {
                     $this->checkError([false, "WhereClause expected."]);
@@ -285,6 +323,7 @@ class PDO_Connection
                 return $where;
             }
         }, $wheres, array_keys($wheres)));
+        // return the sql statement and the parameters
         return [$sql, $params];
     }
 
@@ -298,9 +337,11 @@ class PDO_Connection
      */
     private function checkError($result)
     {
+        // if the result is false, throw an exception
         if ($result[0] == false) {
             throw new Exception($result[1]);
         }
+        // otherwise return the result
         return $result[1];
     }
 }
