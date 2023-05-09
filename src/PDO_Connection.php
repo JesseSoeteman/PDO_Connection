@@ -61,7 +61,7 @@ class PDO_Connection
             $sql .= $getWhere[0];
             $params = array_merge($params, $getWhere[1]);
         }
-        
+
         // Execute the statement
         $result = $this->executeStatement($sql, $params);
 
@@ -69,6 +69,13 @@ class PDO_Connection
         if ($result === false) {
             $this->checkError([false, "Error while executing statement."]);
         }
+
+        // Decode html special chars
+        $result = array_map(function ($row) {
+            return array_map(function ($value) {
+                return htmlspecialchars_decode($value);
+            }, $row);
+        }, $result);
 
         // Return the result
         return $this->checkError([true, $result]);
@@ -160,7 +167,7 @@ class PDO_Connection
         if (count($select) < $minimumRowsToDelete) {
             $this->checkError([false, "No rows found."]);
         }
-        
+
         // Create the sql statement
         $params = [];
         $sql = "DELETE FROM {$table}";
@@ -191,7 +198,7 @@ class PDO_Connection
         // Return the last inserted row ID
         return $this->db->lastInsertId();
     }
-    
+
     /**
      * Execute Statement
      * 
@@ -221,10 +228,10 @@ class PDO_Connection
                 $this->checkError([false, "Failed to bind value."]);
             }
         }
-        
+
         // Execute the statement
         $result = $stmt->execute();
-        
+
         // Check if the statement failed
         if (!$result) {
             $this->checkError([false, "Failed to execute statement."]);
@@ -234,7 +241,7 @@ class PDO_Connection
         if (!$needsFetch) {
             return true;
         }
-        
+
         // Fetch the result
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -290,7 +297,7 @@ class PDO_Connection
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (Exception $e) {
             $this->checkError([false, "Data base connection failed: " . $e->getMessage()]);
-        }  
+        }
     }
 
     /**
