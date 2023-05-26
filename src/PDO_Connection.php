@@ -73,7 +73,8 @@ class PDO_Connection
         // Decode html special chars
         $result = array_map(function ($row) {
             return array_map(function ($value) {
-                $result = htmlspecialchars_decode($value);
+                // $result = htmlspecialchars_decode($value);
+                $result = html_entity_decode($value);
                 // Turn the value into an integer if it is one
                 if (is_numeric($result)) {
                     $result = intval($result);
