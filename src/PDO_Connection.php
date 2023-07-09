@@ -21,21 +21,20 @@ use PDO_Connection\Statics\LOGIC_OP;
 class PDO_Connection
 {
 
-    private PDO $db;
+    private PDO | null $db;
+    private DatabaseDetails $details;
+    private bool $pause = false;
 
     /**
      * Constructor
      * 
-     * 
+     * @param DatabaseDetails $details The database details to use.
      */
     public function __construct(DatabaseDetails $details)
     {
-        try {
-            $this->db = new PDO($details->dsn, $details->username, $details->password);
-            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (Exception $e) {
-            $this->checkError([false, "Data base connection failed: " . $e->getMessage()]);
-        }
+        // Set the database details
+        $this->details = $details;
+        $this->startConnection();
     }
 
     /**
@@ -51,31 +50,46 @@ class PDO_Connection
      */
     public function select(string $table, array $columns, array $wheres = []): array
     {
-        $this->checkTableAndColumns($table, $columns);
-
+        // Create the sql statement
         $sql = "SELECT " . implode(" ,", $columns) . " FROM {$table}";
 
         $params = [];
 
+        // Check if there are any where clauses to use and add them to the sql statement
         if (count($wheres) > 0) {
             $getWhere = $this->getWhereClauseString($wheres);
             $sql .= $getWhere[0];
             $params = array_merge($params, $getWhere[1]);
         }
-        
+
+        // Execute the statement
         $result = $this->executeStatement($sql, $params);
 
+        // Check if the statement failed
         if ($result === false) {
             $this->checkError([false, "Error while executing statement."]);
         }
 
-        $returnArray = [];
+        // Decode html special chars
+        $result = array_map(function ($row) {
+            return array_map(function ($value) {
+                // $result = htmlspecialchars_decode($value);
+                $result = html_entity_decode($value);
+                // Turn the value into an integer if it is one
+                if (is_numeric($result)) {
+                    $result = intval($result);
+                }
+                // Turn the value into a float if it is one
+                if (is_float($result)) {
+                    $result = floatval($result);
+                }   
+                // Return the result
+                return $result;
+            }, $row);
+        }, $result);
 
-        while ($row = $result) {
-            $returnArray[] = $row;
-        }
-
-        return $this->checkError([true, $returnArray]);
+        // Return the result
+        return $this->checkError([true, $result]);
     }
 
     /**
@@ -87,25 +101,22 @@ class PDO_Connection
      */
     public function insert(string $table, array $params)
     {
-        $this->checkTableAndColumns($table, array_map(function ($param) {
-            if (!$param instanceof ParamBindObject) {
-                $this->checkError([false, "ParamBindObject expected."]);
-            }
-            return $param->param;
-        }, $params));
-
+        // Create the sql statement
         $sql = "INSERT INTO {$table} (" . implode(" ,", array_map(function ($param) {
             return $param->param;
         }, $params)) . ") VALUES (" . implode(" ,", array_map(function ($param) {
-            return str_repeat(":", $param->idCount) . $param->param;
+            return ":" . str_repeat("x", $param->idCount) . $param->param;
         }, $params)) . ")";
 
+        // Execute the statement
         $result = $this->executeStatement($sql, $params);
 
+        // Check if the statement failed
         if ($result === false) {
             $this->checkError([false, "Error while executing statement."]);
         }
 
+        // Return the result
         return $this->checkError([true, $result]);
     }
 
@@ -118,40 +129,35 @@ class PDO_Connection
      */
     public function update(string $table, array $params, array $wheres = [])
     {
-        $this->checkTableAndColumns($table, array_merge(array_map(function ($param) {
-            if (!$param instanceof ParamBindObject) {
-                $this->checkError([false, "ParamBindObject expected."]);
-            }
-            return $param->param;
-        }, $params), array_map(function ($where) {
-            if (!$where instanceof WhereClause) {
-                $this->checkError([false, "WhereClause expected."]);
-            }
-            return $where->column;
-        }, $wheres)));
-
+        // Check if there are any rows to update
         $select = $this->select($table, ["*"], $wheres);
 
+        // Stop the script if there are no rows to update
         if (count($select) === 0) {
             $this->checkError([false, "No rows found."]);
         }
 
+        // Create the sql statement
         $sql = "UPDATE {$table} SET " . implode(" ,", array_map(function ($param) {
-            return $param->param . " = " . str_repeat(":", $param->idCount) . $param->param;
+            return $param->param . " = :" . str_repeat("x", $param->idCount) . $param->param;
         }, $params));
 
+        // Check if there are any where clauses to use and add them to the sql statement
         if (count($wheres) > 0) {
             $getWhere = $this->getWhereClauseString($wheres);
             $sql .= $getWhere[0];
             $params = array_merge($params, $getWhere[1]);
         }
 
+        // Execute the statement
         $result = $this->executeStatement($sql, $params);
 
+        // Check if the statement failed
         if ($result === false) {
             $this->checkError([false, "Error while executing statement."]);
         }
 
+        // Return the result
         return $this->checkError([true, $result]);
     }
 
@@ -163,37 +169,32 @@ class PDO_Connection
      * @param string $table The table to delete from.
      * @param array $wheres The where conditions. (WhereClause)
      */
-    public function delete(string $table, array $wheres = [])
+    public function delete(string $table, array $wheres = [], int $minimumRowsToDelete = 1)
     {
-        $this->checkTableAndColumns($table, array_map(function ($where) {
-            if (!$where instanceof WhereClause) {
-                $this->checkError([false, "WhereClause expected."]);
-            }
-            return $where->column;
-        }, $wheres));
-
+        // Check if there are any rows to delete
         $select = $this->select($table, ["*"], $wheres);
 
-        if (count($select) === 0) {
+        // Stop the script if there are no rows to delete and the minimum rows to delete is not 0
+        if (count($select) < $minimumRowsToDelete) {
             $this->checkError([false, "No rows found."]);
         }
-        
+
+        // Create the sql statement
         $params = [];
         $sql = "DELETE FROM {$table}";
 
+        // Check if there are any where clauses to use and add them to the sql statement
         if (count($wheres) > 0) {
             $getWhere = $this->getWhereClauseString($wheres);
             $sql .= $getWhere[0];
             $params = array_merge($params, $getWhere[1]);
         }
 
-        $result = $this->executeStatement($sql, $params);
+        // If this fails, it will throw an exception.
+        $this->executeStatement($sql, $params, false);
 
-        if ($result === false) {
-            $this->checkError([false, "Error while executing statement."]);
-        }
-
-        return $this->checkError([true, $result]);
+        // Return the result
+        return $this->checkError([true, true]);
     }
 
     /**
@@ -205,9 +206,10 @@ class PDO_Connection
      */
     public function lastInsertRowID(): int
     {
+        // Return the last inserted row ID
         return $this->db->lastInsertId();
     }
-    
+
     /**
      * Execute Statement
      * 
@@ -215,77 +217,97 @@ class PDO_Connection
      * 
      * @param string $query The query to execute.
      * @param array $params The parameters to bind to the query. (ParamBindObject)
+     * @param bool $needsFetch If the query needs to be fetched.
      */
-    public function executeStatement($query = "", $params = [])
+    public function executeStatement($query = "", $params = [], $needsFetch = true)
     {
         $stmt = null;
 
+        // Prepare the statement
         if (!$stmt = $this->db->prepare($query)) {
             $this->checkError([false, "Failed to prepare statement."]);
         }
 
+        // Bind the parameters
         foreach ($params as &$param) {
-
             if (!$param instanceof ParamBindObject) {
                 $this->checkError([false, "ParamBindObject expected."]);
             }
 
-            $idCountString = str_repeat(":", $param->idCount);
-            $stmt->bindValue($idCountString . $param->param, $param->value, $param->type);
-            if (!$stmt) {
+            $binding = $stmt->bindValue($param->param, $param->value, $param->type);
+            if (!$binding) {
                 $this->checkError([false, "Failed to bind value."]);
             }
         }
 
+        // Execute the statement
         $result = $stmt->execute();
 
+        // Check if the statement failed
         if (!$result) {
             $this->checkError([false, "Failed to execute statement."]);
         }
 
+        // Check if the statement needs to be fetched
+        if (!$needsFetch) {
+            return true;
+        }
+
+        // Fetch the result
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if (!$result) {
+        // Check if the statement failed
+        if ($result === false) {
             $this->checkError([false, "Failed to fetch result."]);
         }
 
+        // Return the result
         return $result;
     }
 
     /**
-     * Check Table And Columns
+     * pausePDO
      * 
-     * Checks if a table and columns exist. Throws an exception if the table or columns do not exist.
-     * 
-     * @param string $table The table to check.
-     * @param array $columns The columns to check.
-     * 
-     * @return void
+     * Pauses the PDO connection.
      */
-    public function checkTableAndColumns(string $table, array $columns = ["*"]): void
+    public function pausePDO()
     {
-        $tableExists = $this->executeStatement("SELECT name FROM sqlite_master WHERE type='table' AND name=:table_name;", [new ParamBindObject($this->db, "table_name", $table)]);
+        // Set de PDO to null to pause the connection
+        $this->db = null;
+        // Set the pause variable to true
+        $this->pause = true;
+    }
 
-        if ($tableExists == false || count($tableExists) == 0) {
-            $this->checkError([false, "Table does not exist. Table: {$table}"]);
-        }
+    /**
+     * Resume PDO
+     * 
+     * Resumes the PDO connection.
+     * 
+     * @throws Exception
+     */
+    public function resumePDO()
+    {
+        // Resume the connection with the databasedetails
+        $this->startConnection();
+        // Set the pause variable to false
+        $this->pause = false;
+    }
 
-        if (count($columns) == 0 || $columns[0] == "*") {
-            return;
-        }
-
-        $tableColumns = $this->executeStatement("PRAGMA table_info({$table});");
-
-        $tableColumnsArray = [];
-
-        foreach ($tableColumns as $row) {
-            $tableColumnsArray[] = $row["name"];
-        }
-
-        foreach ($columns as $column) {
-            if (!in_array($column, $tableColumnsArray)) {
-                $this->checkError([false, "Column does not exist. Column: {$column}"]);
-            }
+    /**
+     * startConnection
+     * 
+     * Starts the connection to the database.
+     * 
+     * @throws Exception
+     */
+    private function startConnection()
+    {
+        // Try to start a PDO connection with the database details
+        try {
+            $this->db = new PDO($this->details->dsn, $this->details->username, $this->details->password);
+            $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (Exception $e) {
+            $this->checkError([false, "Data base connection failed: " . $e->getMessage()]);
         }
     }
 
@@ -294,7 +316,7 @@ class PDO_Connection
      * 
      * Gets the where clause string and parameters.
      * 
-     * @param array $wheres The where conditions. (WhereClause)
+     * @param array $wheres The where conditions. (WhereClause) [WhereClause, operator, WhereClause, operator, ...]
      * 
      * @return array The where clause string and parameters. [string, params]
      * 
@@ -303,12 +325,14 @@ class PDO_Connection
     private function getWhereClauseString(array $wheres)
     {
         $params = [];
+        // Create the where part of the sql statement
         $sql = " WHERE " . implode(" ", array_map(function ($where, $index) use (&$params) {
+            // Check if the index is even or odd (even = where clause, odd = operator)
             if ($index % 2 === 0) {
                 if (!$where instanceof WhereClause) {
                     $this->checkError([false, "WhereClause expected."]);
                 }
-                $params = $where->getBoundParams();
+                $params = array_merge($params, $where->getBoundParams());
                 return $where->getClause();
             } else {
                 if (!in_array($where, [LOGIC_OP::AND, LOGIC_OP::OR])) {
@@ -317,6 +341,7 @@ class PDO_Connection
                 return $where;
             }
         }, $wheres, array_keys($wheres)));
+        // return the sql statement and the parameters
         return [$sql, $params];
     }
 
@@ -330,9 +355,11 @@ class PDO_Connection
      */
     private function checkError($result)
     {
+        // if the result is false, throw an exception
         if ($result[0] == false) {
             throw new Exception($result[1]);
         }
+        // otherwise return the result
         return $result[1];
     }
 }
